@@ -1,0 +1,82 @@
+//PD
+LOAD CSV WITH HEADERS from 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQa5jpBaD0EebP6ISNvjdSNVplS1F25sV3GBZVF6xiU0tQqCcZ_cLnAokWtMhlo-riATU7fA14-5bYx/pub?output=csv' as pds FIELDTERMINATOR ',' create(p:PD{pdid:toFloat(pds.PdId), pdcity:pds.City,pdlocation:pds.Location})
+
+//CITY
+LOAD CSV WITH HEADERS from 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSCy5KVPd6Yokhb9ULFenQUAk3euivdY_SkSutwR0k3IdHNI_RFCPElmZVd_My32mf7mKoqn8XARWdD/pub?output=csv' as cities 
+FIELDTERMINATOR ',' 
+create(c:City{city:cities.city, stateabb:cities.state,statename:cities.stateName, country:cities.Country})
+
+//CRIME
+LOAD CSV WITH HEADERS from 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHfy7jWkacX-qxqFq3GOA1NNHOhuqozx4i4KPkfdc3dvYydfcZpwio0JCTan1RCekKXPc0xppmM5li/pub?output=csv ' as crimes
+FIELDTERMINATOR ',' 
+create(c:Crime{crimeid:toFloat(crimes.DR_Number), datereport:crimes.Date_Reported,dateoccurred:crimes.Date_Occurred, crimecode:toInteger(crimes.Crime_Code),crimedesc:crimes.Crime_descr,weaponid:toInteger(crimes.Weapon_Used_Code),crimeaddr:crimes.Address,crimecity:crimes.City,victimid:toFloat(crimes.VictimId),criminalid:toFloat(crimes.CriminalId),pdid:toFloat(crimes.PdId),status:crimes.Status_Description})
+
+//WEAPON
+LOAD CSV WITH HEADERS from 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTAM36PJbVVts0ptOLJ9Tfm8ted0U014Mp7Cuw1scsDQlcwnPOvVdbmreb9Nr8lReTz6vE2eXV4HV75/pub?output=csv' as w 
+FIELDTERMINATOR ',' 
+create(a:Weapon{weaponid:toInteger(w.Weapon_Used_Code), weapondesc:w.Weapon_Description})
+
+//VICTIM
+LOAD CSV WITH HEADERS from 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2AH9l4sW2V0oE3PC8Jsk0l3NifXWt_hZYHgkqwJBasE6jYYqG1iB25dQ_y3_yqUtZ8ctkieIRt05i/pub?output=csv' as c 
+FIELDTERMINATOR ','
+ create(v:Victim {victimid:toFloat(c.Victimid),age:toInteger(c.Victim_Age),sex:c.Victim_Sex, firstname:c.first_name,lastname:c.last_name,address:c.address,city:c.city})
+
+
+//CRIMINAL
+LOAD CSV WITH HEADERS from 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTVNBMRGoMONqaRnrj9ys3Jk3spmRnYVx8szRGwhWsnHUgBhVM3JpshDRdyobAfvTzNdIBwDdmzWOU3/pub?output=csv' as c
+FIELDTERMINATOR ',' 
+create(v:Criminal{criminalid:toFloat(c.CriminalId),lastname:c.LastName ,firstname:c.FirstName, age:toInteger(c.Age),address:c.Street,city:c.City})
+
+//INDEXES:
+create index on :PD(pdid)
+create index on :City(city)
+create index on :Crime(crimeid)
+create index on :Weapon(weaponid)
+create index on :Victim(victimid)
+create index on :Criminal(criminalid)
+
+//RELATIONSHIPS:
+//COMMITEDBY
+match(a:Criminal) with a match (b:Crime) 
+where a.criminalid=b.criminalid create (b)-[r:Committedby {commitdate: b.dateoccurred}]->(a) 
+return r
+
+//COMMITEDON
+match(a:Crime) with a match (b:Victim) 
+where a.victimid=b.victimid create (a)-[r:Committedon {commitdate: a.dateoccurred}]->(b) 
+return r
+
+//USING
+match(a:Crime) with a match (b:Weapon) 
+where a.weaponid=b.weaponid create (a)-[r:Using]->(b) 
+return r
+
+LIVESIN
+match(a:Criminal) with a match (b:City) 
+where a.city=b.city create (a)-[r:Livesin]->(b) 
+return r
+
+match(a:Victim) with a match (b:City) 
+where a.city=b.city create (a)-[r:Livesin]->(b) 
+return r
+
+//COMMITEDIN
+match(a:Crime) with a match (b:City)
+ where a.crimecity=b.city create (a)-[r:Committedin{commitdate: a.dateoccurred}]->(b) 
+return r
+
+//LOCATEDIN
+match(a:PD) with a match (b:City) 
+where a.pdcity=b.city create (a)-[r:Locatedin]->(b) 
+return r
+
+INVESTIGATEDBY
+match(a:Crime) with a match (b:PD) 
+where a.pdid=b.pdid create (a)-[r:Investigatedby {reporteddate:a.datereport}]->(b) 
+return r
+
+//Cleanup
+match (n:Crime) remove n.datereport, n.dateoccurred, n.criminalid, n.victimid, n.pdid, n.crimecity, n.weaponid 
+match (n:Criminal) remove n.city
+match(n:Victim) remove n.city
+match (n:PD) remove n.pdcity 

@@ -1,0 +1,69 @@
+//#Q1
+match(a:Crime)-[r:Committedin]->(b:City) return b,count(a) as numcrimes order by numcrimes desc limit 5;
+
+//#Q2
+match(a:Crime)-[r:Using]->(w:Weapon) return w,count(a) as weaponused order by weaponused desc limit 3;
+
+//#Q3
+match(a:Crime)-[r:Committedin]-(c:City) where c.city = 'Boston' return count(a) as crimecount;
+
+//#Q4
+match(a:Crime) return a.crimecode,count(a) as crimecount,a.crimedesc order by crimecount desc;
+
+//#Q5
+match(a:Criminal)-[r:Livesin]->(c:City) return c.stateabb,c.statename,count(a) as totcriminals order by totcriminals desc limit 1;
+
+//#Q6
+match(v:Victim) where v.age<18 return v;
+
+//#Q7
+match (v:Victim)-[r:Committedon]-(c:Crime)-[r1:Committedin]-(d:City) where v.sex='M' or v.sex ='F' return d.city,v.sex, count(v) as totvictims order by d.city,v.sex;
+
+//#Q8
+match (p:PD)<-[r:Investigatedby]-(a:Crime) return p,count(a) as crimecount order by crimecount desc limit 1;
+
+//#Q9
+match (c:Criminal) return round(avg(c.age));
+
+//#Q10
+match ()-[q:Investigatedby]-(c:Crime)-[r:Committedby]-() return q.reporteddate,r.commitdate order by q.reporteddate desc limit 1;
+
+//#Q11
+match ()-[r:Investigatedby]-(c:Crime)-[r1:Committedin]->(b:City) where b.country = 'US' and toInteger(substring(r.reporteddate,0,2)) = 12 and toInteger(substring(r.reporteddate,6,4)) = 2015 return count(c) as crimecount;
+
+//#Q12
+match (c:Crime)-[r:Committedon]-(v:Victim) where c.crimeid = 150519716 return v.address;
+
+//#Q13
+match (q:City)<-[l:Livesin]-(v:Victim{victimid:3700 })<-[r:Committedon]-(a:Crime)-[w]->(t)-[e]->(g:City) return q,l,v,r,a,w,t,e,g;
+
+//#Q14
+create (v:Victim{victimid:3900,sex:'F',firstname:'Maria',lastname:'Lopez',age:33,city:'Fresno'}) return v;
+match (n:Crime{crimeid:150519710}) with n match(v:Victim{victimid:3900}) create (n)-[r:Committedon]->(v) return r;
+match ()-[r1:Committedon]-(n:Crime{crimeid:150519710})-[r:Committedon]->(v:Victim{victimid:3900})set r.commitdate=r1.commitdate return r;
+
+//#Q15
+match(n:Crime{crimeid:150519718}) set n.status = 'Arrest' return n;
+
+//#Q16
+match (n:PD) where n.pdid = 15009854964020 set n.pdlocation = '(41.881832, -87.623177)' return n;
+
+//#Q17
+create (p:PD{pdid:9999999922,location:'(-23.3445,34.5554)'}) return p;
+match (c:Crime{crimeid:150519693}) with c match (p:PD{pdid:9999999922}) create (c)-[r:Investigatedby]->(p) return r;
+match ()<-[r1:Investigatedby]- (c:Crime{crimeid:150519693})-[r:Investigatedby]->(p:PD{pdid:9999999922}) set r.reporteddate = r1.reporteddate return r;
+
+//#E1
+create (n:Witness{witnessid:1002,firstname:'Kevin',lastname:'Sailor',address:'203 Cross st'}) return n;
+match (c:Crime{crimeid:150519693}) with c match (n:Witness{witnessid:1002}) create (c)-[r:Seenby]->(n) return c,r,n;
+
+//#E2
+match (c:Criminal{criminalid:122}) set c.fingerprint =4546335634524 return c;
+
+//#E3
+match (c:Crime)-[r:Investigatedby]->(p:PD{pdid:15010071864020}) set r.finishdate='01/01/2016',c.status='Arrest' return r,c,p;
+
+
+
+
+
